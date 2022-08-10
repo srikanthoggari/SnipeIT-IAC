@@ -1,0 +1,52 @@
+name: container
+on: push
+
+jobs:
+  container:
+    #needs: [s3deploy]
+    runs-on: ubuntu-18.04
+    container: pearlthoughts/p2p-packer:latest
+    steps:
+      # - uses: trstringer/manual-approval@v1
+      #   with:
+      #     secret: ${{ github.TOKEN }}
+      #     approvers: tejapearlthoughts
+      - uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - run: |
+          repo_name=${{ github.event.repository.name }}
+          git config --global --add safe.directory /__w/$repo_name/$repo_name
+          git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          echo "$SSH_KEY" > /__w/$repo_name/$repo_name/ansible/id_rsa
+          packer init .
+          packer build \
+          -var "build_number=$GITHUB_RUN_NUMBER" \
+          -var "commit_sha=$git_hash"  .
+         # -var "aws-access-key-id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+         # -var "aws-secret-access-key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          
+        name: Run in container
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }} 
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} \
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+# #jobs:
+#   s3deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@master
+#     - uses: jakejarvis/s3-sync-action@master
+#       with:
+#         args: --acl public-read --follow-symlinks --delete
+#       env:
+#         AWS_S3_BUCKET: testteja1
+#         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         #AWS_REGION: 'us-west-1'   # optional: defaults to us-east-1
+#         #SOURCE_DIR: 'public'      # optional: defaults to entire repository
