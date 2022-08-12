@@ -127,11 +127,11 @@
   
 #composer install
 
-    - name: Remove composer.lock
-      file:
-        path: "{{ api_project_dir }}/composer.lock"
-        state: absent    
-        
+    # - name: Remove composer.lock
+    #   file:
+    #     path: "{{ api_project_dir }}/composer.lock"
+    #     state: absent    
+
     - name: Composer install 
       shell: composer install
       args:
