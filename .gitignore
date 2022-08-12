@@ -2,7 +2,7 @@
 .env*
 test*
 defapache
-ansible/conf/repo_key
+#ansible/conf/repo_key
 **/cred/*
 
 ### Ansible ###

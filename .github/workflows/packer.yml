@@ -22,7 +22,7 @@ jobs:
           repo_name=${{ github.event.repository.name }}
           git config --global --add safe.directory /__w/$repo_name/$repo_name
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          echo "$SSH_KEY" > /__w/$repo_name/$repo_name/ansible/id_rsa
+          echo "$SSH_KEY" > /__w/$repo_name/$repo_name/Ansible/id_rsa
           packer init .
           packer build \
           -var "build_number=$GITHUB_RUN_NUMBER" \
