@@ -171,8 +171,8 @@
     - name: Disable default Apache site
       become: yes
       shell: /usr/sbin/a2dissite 000-default.conf
-      when: disable_default
-      notify: Reload Apache
+      # when: disable_default
+      # notify: Reload Apache
 
     # - name: "UFW - Allow HTTP on port {{ http_port }}"
     #   become: yes
