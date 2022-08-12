@@ -127,10 +127,11 @@
   
 #composer install
 
-    # - name: Remove composer.lock
-    #   file:
-    #     path: "{{ api_project_dir }}/composer.lock"
-    #     state: absent    
+    - name: Remove composer.lock
+      file:
+        path: "{{ api_project_dir }}/composer.lock"
+        state: absent    
+        
     - name: Composer install 
       shell: composer install
       args:
@@ -167,11 +168,11 @@
     #   shell: /usr/sbin/a2ensite {{ http_conf }}
     #   notify: Reload Apache
 
-    # - name: Disable default Apache site
-    #   become: yes
-    #   shell: /usr/sbin/a2dissite 000-default.conf
-    #   when: disable_default
-    #   notify: Reload Apache
+    - name: Disable default Apache site
+      become: yes
+      shell: /usr/sbin/a2dissite 000-default.conf
+      when: disable_default
+      notify: Reload Apache
 
     # - name: "UFW - Allow HTTP on port {{ http_port }}"
     #   become: yes
