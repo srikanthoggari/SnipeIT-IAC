@@ -9,8 +9,8 @@ packer {
 
   variable "build_number" {}
   variable "commit_sha" {}
-  variable "aws-access-key-id" {}
-  variable "aws-secret-access-key" {}
+  #variable "aws-access-key-id" {}
+  #variable "aws-secret-access-key" {}
 
   source "amazon-ebs" "linux" {
     # AMI Settings
@@ -21,14 +21,13 @@ packer {
     associate_public_ip_address   = false
     ami_virtualization_type       = "hvm"
     #role_arn                     = "arn:aws:iam::416991812294:role/s3jenkins"           
-    access_key                    = "${var.aws-access-key-id}"
+    #access_key                    = "${var.aws-access-key-id}"
     #region                       = "us-east-1"
-    secret_key                    = "${var.aws-secret-access-key}"
-    assume_role {
-        role_arn     = "arn:aws:iam::416991812294:role/s3jenkins"
+    #secret_key                    = "${var.aws-secret-access-key}"
+        #role_arn     = "arn:aws:iam::416991812294:role/s3jenkins"
         #session_name = "SESSION_NAME"
         #external_id  = "EXTERNAL_ID"
-    }
+    #}
     
     tags = {
       type = "base_image"
