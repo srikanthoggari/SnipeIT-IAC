@@ -9,8 +9,8 @@ packer {
 
   variable "build_number" {}
   variable "commit_sha" {}
-  #variable "aws-access-key-id" {}
-  #variable "aws-secret-access-key" {}
+  variable "aws-access-key-id" {}
+  variable "aws-secret-access-key" {}
 
   source "amazon-ebs" "linux" {
     # AMI Settings
