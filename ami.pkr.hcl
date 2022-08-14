@@ -57,7 +57,7 @@ packer {
       "source.amazon-ebs.linux"
     ]
     provisioner "ansible" {
-      playbook_file = "Ansible/main.yml"
+      playbook_file = "Ansible/docker.yml"
       user = "ubuntu"
     }
   }

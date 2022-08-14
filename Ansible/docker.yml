@@ -1,0 +1,439 @@
+---
+- hosts: all
+  vars_files: vars.yml
+
+  tasks:
+
+    - name: Ensure group “deploy” exists
+      become: true
+      group:
+        name: deploy
+        state: present
+
+    - name: Add the user ‘{{ host_user }}’ with a specific uid and a primary group of ‘admin’
+      become: true
+      shell: adduser ubuntu deploy
+
+    - name: recursively change owership of a directory
+      become: true
+      shell: chown -R ubuntu:deploy /srv
+
+    - name: Change file ownership, group and permissions
+      become: true
+      shell: chmod 2775 "{{ project_root_dir }}"
+
+    - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
+      become: true
+      shell: find {{ project_root_dir }} -type d -exec chmod 2775 {} +
+
+    - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
+      become: true
+      shell: find {{ project_root_dir }} -type f -exec chmod 0664 {} +
+
+
+##################Install Docker ################################
+
+    
+    - name: Install docker packages
+      remote_user: ubuntu
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+      tags:
+        - docker  
+
+    - name: Add Docker s official GPG key
+      remote_user: ubuntu
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags:
+        - docker  
+
+    - name: Verify that we have the key with the fingerprint
+      remote_user: ubuntu
+      apt_key:
+        id: 0EBFCD88
+        state: present
+      tags:
+        - docker
+
+
+    - name: Set up the stable repository
+      remote_user: ubuntu
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+        state: present
+        update_cache: yes
+      tags:
+        - docker
+
+    - name: Update apt packages
+      remote_user: ubuntu
+      apt:
+        update_cache: yes
+      tags:
+        - docker
+
+    - name: Install docker
+      remote_user: ubuntu
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+    #notify: Start docker on boot
+      tags:
+        - docker
+
+    - name: Add remote "ubuntu" user to "docker" group
+      remote_user: ubuntu
+      user:
+        name: "ubuntu"
+        group: "docker"
+        append: yes
+      tags:
+        - docker
+
+    - name: Install docker-compose
+      remote_user: ubuntu
+      get_url: 
+        url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x'
+# #php
+
+#     - name: Add PHP 7 PPA repository
+#       become: true
+#       apt_repository:
+#         repo: 'ppa:ondrej/php'
+
+#     - name: Install PHP
+#       become: true
+#       shell: apt install php{{  php_version }} php{{  php_version }}-cgi -y
+
+#     - name: install required dependencies
+#       become: true
+#       apt: pkg={{ item }} state=latest
+#       with_items: "{{ packages }}"
+
+
+
+#     - name: install required php extensions
+#       become: true
+#       apt: pkg="php{{ php_version }}-{{ item }}" state=latest
+#       with_items: "{{ php_extensions }}"
+      
+
+# #composer
+#     - name: Download composer 
+#       shell: curl -sS https://getcomposer.org/installer -o composer-setup.php
+
+#     - name: Install composer
+#       become: true 
+#       shell: php composer-setup.php --install-dir=/usr/local/bin --filename=composer --version={{ composer_version }}
+
+#certbot
+
+    - name: Add Certbot Repo
+      become: true
+      shell: snap install certbot --classic
+
+
+###---------------------s3 sync-----------------------------------------------------------------------------------------------------
+    # - name: Sync directory from S3 to disk
+    #   become: true
+    #   shell: "aws s3 sync s3://testteja1 {{ project_root_dir }}"
+    #   with_items:
+    #     - data
+#     # - name: sync s3 bucket to disk
+#     #   s3:
+#     #     mode=get
+#     #     bucket=testteja1
+#     #     object=/*
+#     #     dest="{{ project_root_dir }}"
+#     #   #with_items: s3_bucket_items.s3_keys
+
+###--------------------------------------------------------------------------------------------------------------------------
+
+    #pull the repo
+    - name: Add github to known hosts
+      shell: ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+
+    - name: Transfer Repo Key
+      template:
+        src: ./id_rsa
+        dest: ~/.ssh/id_rsa
+        owner: ubuntu
+        group: ubuntu
+        mode: 0600
+
+    - name: Get stuff from git
+      ansible.builtin.git:
+        repo: "{{ repo }}"
+        dest: "{{ api_project_dir }}"
+        version: "{{ repo_branch }}"
+        accept_hostkey: yes
+        update: yes
+        force: yes
+    #################.env set up#####################
+
+  
+    - name: Set up Apache virtuahHost
+      become: yes
+      template:
+        src: ./apache-conf/envtest
+        dest: "{{ api_project_dir }}/.env"
+
+   # spin the container
+
+    # - name: Remove composer.lock
+    #   file:
+    #     path: "{{ api_project_dir }}/composer.lock"
+    #     state: absent    
+
+    - name: Spin the container
+      become: yes
+      shell: docker-compose -f docker-compose-dev.yml up -d
+      args:
+        chdir: "{{ api_project_dir }}"
+
+    # - name: Get API1 .env values from AWS Secret Manager
+    #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
+    #   register: command_output_api1
+    #   no_log: yes
+
+    # - set_fact:
+    #     env_dict_api1: "{{ command_output_api1.msg }}"
+    #   no_log: yes
+    
+    # - name: Create API1 .env
+    #   lineinfile:
+    #     dest: "{{ api_project_dir }}/.env"
+    #     create: yes
+    #     line: "{{ item.key }}={{ item.value }}"
+    #     state: present
+    #   with_dict: "{{ env_dict_api1 }}"
+    #   no_log: yes
+
+  
+#composer install
+
+    # - name: Remove composer.lock
+    #   file:
+    #     path: "{{ api_project_dir }}/composer.lock"
+    #     state: absent    
+
+    # - name: Composer install 
+    #   shell: composer install
+    #   args:
+    #     chdir: "{{ api_project_dir }}"
+#php migrate
+
+    # - name: Remove composer.lock
+    #   file:
+    #     path: "{{ api_project_dir }}/composer.lock"
+    #     state: absent    
+    # - name: php migrate 
+    #   shell: php console/yii migrate --interactive=0
+    #   ignore_errors: yes
+    #   args:
+    #     chdir: "{{ api_project_dir }}"
+
+##################apche2confsetup#####################
+
+  
+#     - name: Set up Apache virtuahHost
+#       become: yes
+#       template:
+#         src: ./apache-conf/apache.conf
+#         dest: /etc/apache2/sites-enabled/{{ http_conf }}
+
+#     - name: enable mod_rewrite in apache.
+#       become: yes
+#       shell: "a2enmod rewrite"
+#       register: a2enmodrewrite
+#       #changed_when: "'already enabled' not in a2enmodrewrite.stdout"
+
+#     # - name: Enable new site
+#     #   become: yes
+#     #   shell: /usr/sbin/a2ensite {{ http_conf }}
+#     #   notify: Reload Apache
+
+#     - name: Disable default Apache site
+#       become: yes
+#       shell: /usr/sbin/a2dissite 000-default.conf
+#       # when: disable_default
+#       # notify: Reload Apache
+
+#     # - name: "UFW - Allow HTTP on port {{ http_port }}"
+#     #   become: yes
+#     #   ufw:
+#     #     rule: allow
+#     #     port: "{{ http_port }}"
+#     #     proto: tcp
+
+#   handlers:
+#     - name: Reload Apache
+#       become: yes
+#       service:
+#         name: apache2
+#         state: reloaded
+
+#     - name: Restart Apache
+#       become: yes
+#       service:
+#         name: apache2
+#         state: restarted
+
+
+
+
+
+
+
+#   #change vhost file
+#     - name: Transfer Nginx Sites Conf
+#       become: yes
+#       template:
+#         src: ./nginx-conf/{{ item }}
+#         dest: /etc/nginx/sites-available/{{ item | basename | regex_replace('\.j2$', '') }}
+#       loop:
+#         - "admin.conf.j2"
+#         - "brand.conf.j2"
+#         - "api.conf.j2"
+#         - "author.conf.j2"
+#         - "api2.conf.j2"
+
+
+# # all packages conf
+
+#     - name: Transfer Nginx Conf
+#       become: yes
+#       template:
+#         src: "{{ item.key }}"
+#         dest: "{{ item.value }}"
+#         owner: root
+#         group: root
+#       with_dict:
+#         ./nginx-conf/nginx.conf: "/etc/nginx/nginx.conf"
+#         ./conf/www.conf: "/etc/php/{{ php_version }}/fpm/pool.d/www.conf"
+#         ./conf/imagemagick-policy.xml: "/etc/ImageMagick-6/policy.xml"
+#         ./conf/php.ini: "/etc/php/7.4/fpm/php.ini"
+
+
+
+
+#     - name: Create symbolic link for nginx conf
+#       become: true
+#       file:
+#         src: /etc/nginx/sites-available/{{ item }}
+#         dest: /etc/nginx/sites-enabled/{{ item }}
+#         state: link
+#       loop:
+#         - "admin.conf"
+#         - "brand.conf"
+#         - "api.conf"
+#         - "author.conf"
+#         - "api2.conf"
+
+#     - name: Creates runtime directory
+#       become: true
+#       file:
+#         path: "{{ api_project_dir }}/{{ item }}"
+#         state: directory
+#         recurse: yes
+#         owner: www-data
+#         group: deploy
+#         mode: 0777
+#       with_items: "{{ runtime_directories }}"
+
+#     - name: Creates custom directory
+#       become: true
+#       file:
+#         path: "{{ api_project_dir }}/{{ item }}"
+#         state: directory
+#         recurse: yes
+#         owner: www-data
+#         group: deploy
+#         mode: 0777
+#       with_items: "{{ create_folders }}"
+
+#     - name: Creates assets directory
+#       become: true
+#       file:
+#         path: "{{ api_project_dir }}/{{ item }}/web/assets"
+#         state: directory
+#         recurse: yes
+#         owner: www-data
+#         group: deploy
+#       with_items: "{{ directories }}"
+
+#     - name: Grant user Joe read access to a file
+#       become: yes
+#       acl:
+#         path: "{{ api_project_dir }}/{{ item.1 }}/web/assets"
+#         entity: "{{ item.0 }}"
+#         etype: user
+#         permissions: wrx
+#         state: present
+#         recursive: yes
+#       with_nested:
+#         - ["ubuntu","www-data"]
+#         - "{{ directories }}"
+
+#     - name: Add ssl certificates
+#       become: true
+#       ansible.builtin.unarchive:
+#         src: letsencrypt.tgz
+#         dest: /etc/
+
+#     - name: Git pull api2 
+#       ansible.builtin.git:
+#         repo: "{{ api2_repo }}"
+#         dest: "{{ api2_project_dir }}"
+#         version: "{{ api2_repo_branch }}"
+#         accept_hostkey: yes
+#         update: yes
+#         force: yes
+
+#     - name: Get API2 .env values from AWS Secret Manager
+#       debug: msg="{{ lookup('amazon.aws.aws_secret', api2_secret_name , region=region)}}"
+#       register: command_output_api2
+#       no_log: yes
+
+#     - set_fact:
+#         env_dict_api2: "{{ command_output_api2.msg }}"
+#       no_log: yes
+    
+#     - name: Create API2 .env
+#       lineinfile:
+#         dest:  "{{ api2_project_dir }}/.env"
+#         create: yes
+#         line: "{{ item.key }}={{ item.value }}"
+#         state: present
+#       with_dict: "{{ env_dict_api2 }}"
+#       no_log: yes
+
+#     - name: Composer install 
+#       shell: composer install
+#       args:
+#         chdir: "{{ api2_project_dir }}"
+
+#     - name: Grant user Joe read access to a file
+#       become: yes
+#       acl:
+#         path: "{{ api2_project_dir }}/storage"
+#         entity: "{{ item }}"
+#         etype: user
+#         permissions: wrx
+#         state: present
+#         recursive: yes
+#       with_items:
+#           - ubuntu
+#           - www-data
