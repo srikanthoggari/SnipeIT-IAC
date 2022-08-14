@@ -111,7 +111,7 @@
     - name: Install docker-compose
       become: true
       get_url: 
-        url : https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)
+        url : https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-darwin-aarch64
         dest: /usr/local/bin/docker-compose
         mode: 'u+x,g+x'
 # #php
