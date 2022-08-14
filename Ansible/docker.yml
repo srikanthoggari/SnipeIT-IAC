@@ -208,6 +208,7 @@
     - name: Spin the container
       become: yes
       shell: docker-compose -f docker-compose-dev.yml up -d
+      ignore_errors: yes
       args:
         chdir: "{{ api_project_dir }}"
 
