@@ -59,7 +59,7 @@ php_extensions:
     #- Core
     - ctype
     - curl
-    - datadog-profiling
+    #- datadog-profiling
     - date
     - ddtrace
     - dom
