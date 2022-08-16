@@ -60,7 +60,7 @@ php_extensions:
     - ctype
     - curl
     #- datadog-profiling
-    - date
+    #- date
     - ddtrace
     - dom
     - exif
