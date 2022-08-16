@@ -61,7 +61,7 @@ php_extensions:
     - curl
     #- datadog-profiling
     #- date
-    - ddtrace
+    #- ddtrace
     - dom
     - exif
     - fileinfo

@@ -52,7 +52,7 @@
       become: true
       apt: pkg="php{{ php_version }}-{{ item }}" state=latest
       with_items: "{{ php_extensions }}"
-      
+      ignore_errors: yes
 
 #composer
     - name: Download composer 
