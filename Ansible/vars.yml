@@ -56,7 +56,7 @@ packages:
 php_extensions:
     - bcmath
     - calendar
-    - Core
+    #- Core
     - ctype
     - curl
     - datadog-profiling
