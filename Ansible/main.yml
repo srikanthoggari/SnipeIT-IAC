@@ -119,30 +119,30 @@
     #################.env set up#####################
 
   
-    - name: Set up Apache virtuahHost
+    - name: Set up .env
       become: yes
       template:
         src: ./apache-conf/envtest
         dest: "{{ api_project_dir }}/.env"
 
 
-  ##################MYSQL SET UP ###################
+  # ##################MYSQL SET UP ###################
 
-    - name: Create snipeit database
-      become: yes
-      mysql_db: name=snipeit_db state=present
-      #register: db_status
+  #   - name: Create snipeit database
+  #     become: yes
+  #     mysql_db: name=snipeit_db state=present
+  #     #register: db_status
 
-    - name: Create snipeit mysql user
-      become: yes
-      mysql_user: name=snipeit_user host='localhost' password=password priv=*.*:ALL state=present
+  #   - name: Create snipeit mysql user
+  #     become: yes
+  #     mysql_user: name=snipeit_user host='localhost' password=password priv=*.*:ALL state=present
 
-    - name: add sample data to database  
-      become: yes
-      copy: src=./apache-conf/dump.sql dest=/tmp/dump.sql
+  #   - name: add sample data to database  
+  #     become: yes
+  #     copy: src=./apache-conf/dump.sql dest=/tmp/dump.sql
 
-    - name: insert sample data into database  
-      mysql_db: name=snipeit_db state=import target=/tmp/dump.sql login_user=snipeit_user login_password=password
+  #   - name: insert sample data into database  
+  #     mysql_db: name=snipeit_db state=import target=/tmp/dump.sql login_user=snipeit_user login_password=password
 
     # - name: Get API1 .env values from AWS Secret Manager
     #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
@@ -180,11 +180,11 @@
     #   file:
     #     path: "{{ api_project_dir }}/composer.lock"
     #     state: absent    
-    - name: php migrate 
-      shell: php console/yii migrate --interactive=0
-      ignore_errors: yes
-      args:
-        chdir: "{{ api_project_dir }}"
+    # - name: php migrate 
+    #   shell: php console/yii migrate --interactive=0
+    #   ignore_errors: yes
+    #   args:
+    #     chdir: "{{ api_project_dir }}"
 
 ##################apche2confsetup#####################
 
