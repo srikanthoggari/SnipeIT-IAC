@@ -128,17 +128,21 @@
 
   ##################MYSQL SET UP ###################
 
-    # - name: create a new database 
-    #   become: yes 
-    #   mysql_db: name=snipeit_db state=present login_user=root login_password="{{ mysql_root_password }}"  
-      
-    # - name: add sample data to database  
-    #   become: yes
-    #   copy: src=dump.sql dest=/tmp/dump.sql  
-    
-    # - name: insert sample data into database  
-    #   become: yes
-    #   mysql_db: name=testdb state=import target=/tmp/dump.sql login_user=root login_password="{{ mysql_root_password }}"
+    - name: Create snipeit database
+      become: yes
+      mysql_db: name=snipeit_db state=present
+      #register: db_status
+
+    - name: Create snipeit mysql user
+      become: yes
+      mysql_user: name=snipeit_user host='localhost' password=password priv=*.*:ALL state=present
+
+    - name: add sample data to database  
+      become: yes
+      copy: src=./apache-conf/dump.sql dest=/tmp/dump.sql
+
+    - name: insert sample data into database  
+      mysql_db: name=snipeit_db state=import target=/tmp/dump.sql login_user=snipeit_user login_password=password
 
     # - name: Get API1 .env values from AWS Secret Manager
     #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
@@ -166,21 +170,21 @@
     #     path: "{{ api_project_dir }}/composer.lock"
     #     state: absent    
 
-    # - name: Composer install 
-    #   shell: composer install
-    #   args:
-    #     chdir: "{{ api_project_dir }}"
+    - name: Composer install 
+      shell: composer install
+      args:
+        chdir: "{{ api_project_dir }}"
 #php migrate
 
     # - name: Remove composer.lock
     #   file:
     #     path: "{{ api_project_dir }}/composer.lock"
     #     state: absent    
-    # - name: php migrate 
-    #   shell: php console/yii migrate --interactive=0
-    #   ignore_errors: yes
-    #   args:
-    #     chdir: "{{ api_project_dir }}"
+    - name: php migrate 
+      shell: php console/yii migrate --interactive=0
+      ignore_errors: yes
+      args:
+        chdir: "{{ api_project_dir }}"
 
 ##################apche2confsetup#####################
 
@@ -191,9 +195,7 @@
         src: ./apache-conf/apache.conf
         dest: /etc/apache2/sites-enabled/{{ http_conf }}
 
-#     - name: enable mod_rewrite in apache.
-#       become: true
-#       shell: "a2enmod rewrite"
+
 #       register: a2enmodrewrite
 #       #changed_when: "'already enabled' not in a2enmodrewrite.stdout"
 
@@ -203,10 +205,14 @@
 #     #   notify: Reload Apache
 
     - name: Disable default Apache site
-      become: ture
-      shell: rm -r  000-default.conf
-      args:
-        chdir: "/etc/apache2/sites-enabled/"
+      become: true
+      file: path=/etc/apache2/sites-enabled/000-default.conf state=absent
+
+    - name: enable mod_rewrite in apache.
+      become: true
+      shell: "a2enmod rewrite"
+      # args:
+      #   chdir: "/etc/apache2/sites-enabled/"
 #       # when: disable_default
 #       # notify: Reload Apache
 
