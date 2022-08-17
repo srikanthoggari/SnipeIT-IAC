@@ -22,9 +22,6 @@
       become: true
       shell: chmod 2775 "{{ project_root_dir }}"
 
-    - name: Change file ownership, group and permissions
-      become: true
-      shell: chmod 777 -R .
 
     - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
       become: true
@@ -119,34 +116,34 @@
     #############################.env set up for testing#######################################
 
   
-    - name: Set up .env
-      become: yes
-      template:
-        src: ./apache-conf/envtest
-        dest: "{{ api_project_dir }}/.env"
+    # - name: Set up .env
+    #   become: yes
+    #   template:
+    #     src: ./apache-conf/envtest
+    #     dest: "{{ api_project_dir }}/.env"
 
 
   # ##################Get API1 .env values from AWS Secret Manager###################
 
 
 
-  # - name: Get API1 .env values from AWS Secret Manager
-  #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
-  #   register: command_output_api1
-  #   no_log: yes
+    - name: Get API1 .env values from AWS Secret Manager
+      debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
+      register: command_output_api1
+      no_log: yes
 
-  # - set_fact:
-  #     env_dict_api1: "{{ command_output_api1.msg }}"
-  #   no_log: yes
+    - set_fact:
+        env_dict_api1: "{{ command_output_api1.msg }}"
+      no_log: yes
     
-  # - name: Create API1 .env
-  #   lineinfile:
-  #     dest: "{{ api_project_dir }}/.env"
-  #     create: yes
-  #     line: "{{ item.key }}={{ item.value }}"
-  #     state: present
-  #   with_dict: "{{ env_dict_api1 }}"
-  #   no_log: yes
+    - name: Create API1 .env
+      lineinfile:
+        dest: "{{ api_project_dir }}/.env"
+        create: yes
+        line: "{{ item.key }}={{ item.value }}"
+        state: present
+      with_dict: "{{ env_dict_api1 }}"
+      no_log: yes
 
 
 
@@ -182,14 +179,18 @@
       shell: mv bower-asset bower 
       args:
         chdir: "{{ api_project_dir }}/vendor"
-#php migrate #
+    
+    - name: Change file ownership, group and permissions
+      become: true
+      shell: chmod 777 -R "{{ project_root_dir }}"
 
-   
-    # - name: php migrate 
-    #   shell: php console/yii migrate --interactive=0
-    #   ignore_errors: yes
-    #   args:
-    #     chdir: "{{ api_project_dir }}"
+
+#php migrate #
+    - name: php migrate 
+      shell: php console/yii migrate --interactive=0
+      ignore_errors: yes
+      args:
+        chdir: "{{ api_project_dir }}"
 
 ##################apche2confsetup#####################
 
