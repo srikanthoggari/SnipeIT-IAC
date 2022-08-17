@@ -128,17 +128,17 @@
 
   ##################MYSQL SET UP ###################
 
-    - name: create a new database 
-      become: yes 
-      mysql_db: name=snipeit_db state=present login_user=root login_password="{{ mysql_root_password }}"  
+    # - name: create a new database 
+    #   become: yes 
+    #   mysql_db: name=snipeit_db state=present login_user=root login_password="{{ mysql_root_password }}"  
       
-    - name: add sample data to database  
-      become: yes
-      copy: src=dump.sql dest=/tmp/dump.sql  
+    # - name: add sample data to database  
+    #   become: yes
+    #   copy: src=dump.sql dest=/tmp/dump.sql  
     
-    - name: insert sample data into database  
-      become: yes
-      mysql_db: name=testdb state=import target=/tmp/dump.sql login_user=root login_password="{{ mysql_root_password }}"
+    # - name: insert sample data into database  
+    #   become: yes
+    #   mysql_db: name=testdb state=import target=/tmp/dump.sql login_user=root login_password="{{ mysql_root_password }}"
 
     # - name: Get API1 .env values from AWS Secret Manager
     #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
