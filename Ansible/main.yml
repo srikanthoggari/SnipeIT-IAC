@@ -24,7 +24,7 @@
 
     - name: Change file ownership, group and permissions
       become: true
-      shell: chmod 777 "{{ project_root_dir }}"
+      shell: chmod 777 -R .
 
     - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
       become: true
@@ -59,9 +59,9 @@
       ignore_errors: yes
 
 
-    - name: Install PHP with missed above
+    - name: Install libapache2
       become: true
-      shell: apt-get install libapache2-mod-php7.1 -y
+      shell: apt-get install libapache2-mod-php{{  php_version }} -y
 
 #composer
     - name: Download composer 
@@ -116,7 +116,7 @@
         force: yes
 
         
-    #################.env set up#####################
+    #############################.env set up for testing#######################################
 
   
     - name: Set up .env
@@ -126,7 +126,31 @@
         dest: "{{ api_project_dir }}/.env"
 
 
-  # ##################MYSQL SET UP ###################
+  # ##################Get API1 .env values from AWS Secret Manager###################
+
+
+
+  # - name: Get API1 .env values from AWS Secret Manager
+  #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
+  #   register: command_output_api1
+  #   no_log: yes
+
+  # - set_fact:
+  #     env_dict_api1: "{{ command_output_api1.msg }}"
+  #   no_log: yes
+    
+  # - name: Create API1 .env
+  #   lineinfile:
+  #     dest: "{{ api_project_dir }}/.env"
+  #     create: yes
+  #     line: "{{ item.key }}={{ item.value }}"
+  #     state: present
+  #   with_dict: "{{ env_dict_api1 }}"
+  #   no_log: yes
+
+
+
+  # ################## MYSQL SET UP ###################
 
   #   - name: Create snipeit database
   #     become: yes
@@ -143,43 +167,24 @@
 
   #   - name: insert sample data into database  
   #     mysql_db: name=snipeit_db state=import target=/tmp/dump.sql login_user=snipeit_user login_password=password
-
-    # - name: Get API1 .env values from AWS Secret Manager
-    #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
-    #   register: command_output_api1
-    #   no_log: yes
-
-    # - set_fact:
-    #     env_dict_api1: "{{ command_output_api1.msg }}"
-    #   no_log: yes
-    
-    # - name: Create API1 .env
-    #   lineinfile:
-    #     dest: "{{ api_project_dir }}/.env"
-    #     create: yes
-    #     line: "{{ item.key }}={{ item.value }}"
-    #     state: present
-    #   with_dict: "{{ env_dict_api1 }}"
-    #   no_log: yes
-
+   
+   
   
 #composer install
-
-    # - name: Remove composer.lock
-    #   file:
-    #     path: "{{ api_project_dir }}/composer.lock"
-    #     state: absent    
 
     - name: Composer install 
       shell: composer install
       args:
         chdir: "{{ api_project_dir }}"
+
+    - name: Move Bower-asset > bower
+      become: true 
+      shell: mv bower-asset bower 
+      args:
+        chdir: "{{ api_project_dir }}/vendor"
 #php migrate
 
-    # - name: Remove composer.lock
-    #   file:
-    #     path: "{{ api_project_dir }}/composer.lock"
-    #     state: absent    
+   
     # - name: php migrate 
     #   shell: php console/yii migrate --interactive=0
     #   ignore_errors: yes
@@ -196,13 +201,6 @@
         dest: /etc/apache2/sites-enabled/{{ http_conf }}
 
 
-#       register: a2enmodrewrite
-#       #changed_when: "'already enabled' not in a2enmodrewrite.stdout"
-
-#     # - name: Enable new site
-#     #   become: yes
-#     #   shell: /usr/sbin/a2ensite {{ http_conf }}
-#     #   notify: Reload Apache
 
     - name: Disable default Apache site
       become: true
@@ -211,24 +209,10 @@
     - name: enable mod_rewrite in apache.
       become: true
       shell: "a2enmod rewrite"
-      # args:
-      #   chdir: "/etc/apache2/sites-enabled/"
-#       # when: disable_default
-#       # notify: Reload Apache
 
-#     # - name: "UFW - Allow HTTP on port {{ http_port }}"
-#     #   become: yes
-#     #   ufw:
-#     #     rule: allow
-#     #     port: "{{ http_port }}"
-#     #     proto: tcp
 
 #   handlers:
-#     - name: Reload Apache
-#       become: yes
-#       service:
-#         name: apache2
-#         state: reloaded
+
 
     - name: Restart Apache
       become: yes
@@ -240,145 +224,3 @@
 
 
 
-
-
-#   #change vhost file
-#     - name: Transfer Nginx Sites Conf
-#       become: yes
-#       template:
-#         src: ./nginx-conf/{{ item }}
-#         dest: /etc/nginx/sites-available/{{ item | basename | regex_replace('\.j2$', '') }}
-#       loop:
-#         - "admin.conf.j2"
-#         - "brand.conf.j2"
-#         - "api.conf.j2"
-#         - "author.conf.j2"
-#         - "api2.conf.j2"
-
-
-# # all packages conf
-
-#     - name: Transfer Nginx Conf
-#       become: yes
-#       template:
-#         src: "{{ item.key }}"
-#         dest: "{{ item.value }}"
-#         owner: root
-#         group: root
-#       with_dict:
-#         ./nginx-conf/nginx.conf: "/etc/nginx/nginx.conf"
-#         ./conf/www.conf: "/etc/php/{{ php_version }}/fpm/pool.d/www.conf"
-#         ./conf/imagemagick-policy.xml: "/etc/ImageMagick-6/policy.xml"
-#         ./conf/php.ini: "/etc/php/7.4/fpm/php.ini"
-
-
-
-
-#     - name: Create symbolic link for nginx conf
-#       become: true
-#       file:
-#         src: /etc/nginx/sites-available/{{ item }}
-#         dest: /etc/nginx/sites-enabled/{{ item }}
-#         state: link
-#       loop:
-#         - "admin.conf"
-#         - "brand.conf"
-#         - "api.conf"
-#         - "author.conf"
-#         - "api2.conf"
-
-#     - name: Creates runtime directory
-#       become: true
-#       file:
-#         path: "{{ api_project_dir }}/{{ item }}"
-#         state: directory
-#         recurse: yes
-#         owner: www-data
-#         group: deploy
-#         mode: 0777
-#       with_items: "{{ runtime_directories }}"
-
-#     - name: Creates custom directory
-#       become: true
-#       file:
-#         path: "{{ api_project_dir }}/{{ item }}"
-#         state: directory
-#         recurse: yes
-#         owner: www-data
-#         group: deploy
-#         mode: 0777
-#       with_items: "{{ create_folders }}"
-
-#     - name: Creates assets directory
-#       become: true
-#       file:
-#         path: "{{ api_project_dir }}/{{ item }}/web/assets"
-#         state: directory
-#         recurse: yes
-#         owner: www-data
-#         group: deploy
-#       with_items: "{{ directories }}"
-
-#     - name: Grant user Joe read access to a file
-#       become: yes
-#       acl:
-#         path: "{{ api_project_dir }}/{{ item.1 }}/web/assets"
-#         entity: "{{ item.0 }}"
-#         etype: user
-#         permissions: wrx
-#         state: present
-#         recursive: yes
-#       with_nested:
-#         - ["ubuntu","www-data"]
-#         - "{{ directories }}"
-
-#     - name: Add ssl certificates
-#       become: true
-#       ansible.builtin.unarchive:
-#         src: letsencrypt.tgz
-#         dest: /etc/
-
-#     - name: Git pull api2 
-#       ansible.builtin.git:
-#         repo: "{{ api2_repo }}"
-#         dest: "{{ api2_project_dir }}"
-#         version: "{{ api2_repo_branch }}"
-#         accept_hostkey: yes
-#         update: yes
-#         force: yes
-
-#     - name: Get API2 .env values from AWS Secret Manager
-#       debug: msg="{{ lookup('amazon.aws.aws_secret', api2_secret_name , region=region)}}"
-#       register: command_output_api2
-#       no_log: yes
-
-#     - set_fact:
-#         env_dict_api2: "{{ command_output_api2.msg }}"
-#       no_log: yes
-    
-#     - name: Create API2 .env
-#       lineinfile:
-#         dest:  "{{ api2_project_dir }}/.env"
-#         create: yes
-#         line: "{{ item.key }}={{ item.value }}"
-#         state: present
-#       with_dict: "{{ env_dict_api2 }}"
-#       no_log: yes
-
-#     - name: Composer install 
-#       shell: composer install
-#       args:
-#         chdir: "{{ api2_project_dir }}"
-
-#     - name: Grant user Joe read access to a file
-#       become: yes
-#       acl:
-#         path: "{{ api2_project_dir }}/storage"
-#         entity: "{{ item }}"
-#         etype: user
-#         permissions: wrx
-#         state: present
-#         recursive: yes
-#       with_items:
-#           - ubuntu
-#           - www-data
