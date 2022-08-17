@@ -16,11 +16,15 @@
 
     - name: recursively change owership of a directory
       become: true
-      shell: chown -R ubuntu:deploy /srv
+      shell: chown -R ubuntu:ubuntu /srv
 
     - name: Change file ownership, group and permissions
       become: true
       shell: chmod 2775 "{{ project_root_dir }}"
+
+    - name: Change file ownership, group and permissions
+      become: true
+      shell: chmod 777 "{{ project_root_dir }}"
 
     - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
       become: true
@@ -45,7 +49,7 @@
       become: true
       apt: pkg={{ item }} state=latest
       with_items: "{{ packages }}"
-
+      
 
 
     - name: install required php extensions
@@ -53,6 +57,11 @@
       apt: pkg="php{{ php_version }}-{{ item }}" state=latest
       with_items: "{{ php_extensions }}"
       ignore_errors: yes
+
+
+    - name: Install PHP with missed above
+      become: true
+      shell: apt-get install libapache2-mod-php7.1 -y
 
 #composer
     - name: Download composer 
@@ -106,7 +115,7 @@
         update: yes
         force: yes
 
-
+        
     #################.env set up#####################
 
   
@@ -115,6 +124,21 @@
       template:
         src: ./apache-conf/envtest
         dest: "{{ api_project_dir }}/.env"
+
+
+  ##################MYSQL SET UP ###################
+
+    - name: create a new database 
+      become: yes 
+      mysql_db: name=snipeit_db state=present login_user=root login_password="{{ mysql_root_password }}"  
+      
+    - name: add sample data to database  
+      become: yes
+      copy: src=dump.sql dest=/tmp/dump.sql  
+    
+    - name: insert sample data into database  
+      become: yes
+      mysql_db: name=testdb state=import target=/tmp/dump.sql login_user=root login_password="{{ mysql_root_password }}"
 
     # - name: Get API1 .env values from AWS Secret Manager
     #   debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
@@ -158,17 +182,17 @@
     #   args:
     #     chdir: "{{ api_project_dir }}"
 
-# ##################apche2confsetup#####################
+##################apche2confsetup#####################
 
   
-#     - name: Set up Apache virtuahHost
-#       become: yes
-#       template:
-#         src: ./apache-conf/apache.conf
-#         dest: /etc/apache2/sites-enabled/{{ http_conf }}
+    - name: Set up Apache virtuahHost
+      become: true
+      template:
+        src: ./apache-conf/apache.conf
+        dest: /etc/apache2/sites-enabled/{{ http_conf }}
 
 #     - name: enable mod_rewrite in apache.
-#       become: yes
+#       become: true
 #       shell: "a2enmod rewrite"
 #       register: a2enmodrewrite
 #       #changed_when: "'already enabled' not in a2enmodrewrite.stdout"
@@ -178,9 +202,11 @@
 #     #   shell: /usr/sbin/a2ensite {{ http_conf }}
 #     #   notify: Reload Apache
 
-#     - name: Disable default Apache site
-#       become: yes
-#       shell: /usr/sbin/a2dissite 000-default.conf
+    - name: Disable default Apache site
+      become: ture
+      shell: rm -r  000-default.conf
+      args:
+        chdir: "/etc/apache2/sites-enabled/"
 #       # when: disable_default
 #       # notify: Reload Apache
 
@@ -198,11 +224,11 @@
 #         name: apache2
 #         state: reloaded
 
-#     - name: Restart Apache
-#       become: yes
-#       service:
-#         name: apache2
-#         state: restarted
+    - name: Restart Apache
+      become: yes
+      service:
+        name: apache2
+        state: restarted
 
 
 
