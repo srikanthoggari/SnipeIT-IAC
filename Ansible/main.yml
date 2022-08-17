@@ -182,7 +182,7 @@
       shell: mv bower-asset bower 
       args:
         chdir: "{{ api_project_dir }}/vendor"
-#php migrate
+#php migrate #
 
    
     # - name: php migrate 
