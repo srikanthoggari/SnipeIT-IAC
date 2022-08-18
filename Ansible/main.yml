@@ -123,7 +123,7 @@
     #     dest: "{{ api_project_dir }}/.env"
 
 
-  ####################Get API1 .env values from AWS Secret Manager###################
+  ####################Get API1 .env values from AWS Secret Manager####################
 
 
 
