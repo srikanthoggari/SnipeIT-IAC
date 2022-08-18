@@ -130,11 +130,12 @@
     - name: Get API1 .env values from AWS Secret Manager
       debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
       register: command_output_api1
-      no_log: yes
+      ignore_errors: yes
+      #no_log: yes
 
     - set_fact:
         env_dict_api1: "{{ command_output_api1.msg }}"
-      no_log: yes
+      #no_log: yes
     
     - name: Create API1 .env
       lineinfile:
@@ -143,7 +144,8 @@
         line: "{{ item.key }}={{ item.value }}"
         state: present
       with_dict: "{{ env_dict_api1 }}"
-      no_log: yes
+      ignore_errors: yes
+     # no_log: yes
 
 
 
