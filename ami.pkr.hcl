@@ -14,20 +14,19 @@ packer {
 
   source "amazon-ebs" "linux" {
     # AMI Settings
-    ami_name                      = "teja_goldenAMI_${var.build_number}"
+    ami_name                      = "smwdev_goldenAMI_${var.build_number}"
     instance_type                 = "c5.large"
     source_ami                    = "ami-00978328f54e31526"
     ssh_username                  = "ubuntu"
     associate_public_ip_address   = false
     ami_virtualization_type       = "hvm"
-    #role_arn                      = "arn:aws:iam::416991812294:role/s3jenkins"           
-    #access_key                     = "${var.aws-access-key-id}"
-    #region                         = "us-east-1"
-    #secret_key                     = "${var.aws-secret-access-key}"
-    #assume_role {
-    #    role_arn     = "arn:aws:iam::416991812294:role/s3jenkins"
-     #   #session_name = "SESSION_NAME"
-     #   #external_id  = "EXTERNAL_ID"
+    #role_arn                     = "arn:aws:iam::416991812294:role/s3jenkins"           
+    #access_key                    = "${var.aws-access-key-id}"
+    #region                       = "us-east-1"
+    #secret_key                    = "${var.aws-secret-access-key}"
+        #role_arn     = "arn:aws:iam::416991812294:role/s3jenkins"
+        #session_name = "SESSION_NAME"
+        #external_id  = "EXTERNAL_ID"
     #}
     
     tags = {
@@ -58,7 +57,7 @@ packer {
       "source.amazon-ebs.linux"
     ]
     provisioner "ansible" {
-      playbook_file = "ansible/main.yml"
+      playbook_file = "Ansible/main.yml"
       user = "ubuntu"
     }
   }

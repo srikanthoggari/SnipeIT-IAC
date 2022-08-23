@@ -17,23 +17,26 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          #aws_session_token: ${{ secrets.AWS_SESSION_TOKEN}}
           aws-region: us-east-1
       - run: |
           repo_name=${{ github.event.repository.name }}
           git config --global --add safe.directory /__w/$repo_name/$repo_name
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
-          echo "$SSH_KEY" > /__w/$repo_name/$repo_name/ansible/id_rsa
+          echo "$SSH_KEY" > /__w/$repo_name/$repo_name/Ansible/id_rsa
           packer init .
           packer build \
           -var "build_number=$GITHUB_RUN_NUMBER" \
           -var "commit_sha=$git_hash"  .
-         # -var "aws-access-key-id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-         # -var "aws-secret-access-key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+       #   -var "aws-access-key-id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+       #   -var "aws-secret-access-key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          
+          
           
         name: Run in container
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }} 
-          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} \
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} 
           # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 # #jobs:
