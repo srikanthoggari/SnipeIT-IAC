@@ -18,6 +18,9 @@ SSH_KEY (Private Key)  - where the public key should be authenticate with github
 Every commit will automatically creates AMI
 
 ```
+### Terraform for Infra provisioning
+https://github.com/PT-DevOps/SMW-IaC
+
 
 ### Demo Video For Reference
 
