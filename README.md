@@ -13,7 +13,8 @@ AWS_ACCESS_KEY_ID
 
 AWS_SECRET_ACCESS_KEY
 
-SSH_KEY (Private Key)  - where the public key should be authenticate with github
+SSH_KEY (Private Key)  - where the public key should be authenticate with github  
+Please skip this step if reppo is public
 
 Every commit will automatically creates AMI
 
