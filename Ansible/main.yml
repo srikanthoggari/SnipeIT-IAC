@@ -16,12 +16,11 @@
 
     - name: recursively change owership of a directory
       become: true
-      shell: chown -R ubuntu:ubuntu /srv
+      shell: chown -R ubuntu:deploy /srv
 
     - name: Change file ownership, group and permissions
       become: true
       shell: chmod 2775 "{{ project_root_dir }}"
-
 
     - name: Execute the command in remote shell; stdout goes to the specified file on the remote.
       become: true
@@ -31,63 +30,79 @@
       become: true
       shell: find {{ project_root_dir }} -type f -exec chmod 0664 {} +
 
-#php
 
-    - name: Add PHP 7 PPA repository
-      become: true
-      apt_repository:
-        repo: 'ppa:ondrej/php'
+##################Install Docker & Required dependencies ################################
 
-    - name: Install PHP
-      become: true
-      shell: apt install php{{  php_version }} php{{  php_version }}-cgi -y
-
+    
+ 
     - name: install required dependencies
       become: true
       apt: pkg={{ item }} state=latest
-      with_items: "{{ packages }}"
-      
+      with_items: 
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
 
-
-    - name: install required php extensions
+    - name: Add Docker s official GPG key
       become: true
-      apt: pkg="php{{ php_version }}-{{ item }}" state=latest
-      with_items: "{{ php_extensions }}"
-      ignore_errors: yes
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags:
+        - docker  
 
-
-    - name: Install libapache2
+    - name: Verify that we have the key with the fingerprint
       become: true
-      shell: apt-get install libapache2-mod-php{{  php_version }} -y
+      apt_key:
+        id: 0EBFCD88
+        state: present
+      tags:
+        - docker
 
-#composer
-    - name: Download composer 
-      shell: curl -sS https://getcomposer.org/installer -o composer-setup.php
 
-    - name: Install composer
-      become: true 
-      shell: php composer-setup.php --install-dir=/usr/local/bin --filename=composer --version={{ composer_version }}
-
-#certbot
-
-    - name: Add Certbot Repo
+    - name: Set up the stable repository
       become: true
-      shell: snap install certbot --classic
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu xenial stable
+        state: present
+        update_cache: yes
+      tags:
+        - docker
 
+    - name: Update apt packages
+      become: true
+      apt:
+        update_cache: yes
+      tags:
+        - docker
 
-###---------------------s3 sync-----------------------------------------------------------------------------------------------------
-    # - name: Sync directory from S3 to disk
-    #   become: true
-    #   shell: "aws s3 sync s3://testteja1 {{ project_root_dir }}"
-    #   with_items:
-    #     - data
-#     # - name: sync s3 bucket to disk
-#     #   s3:
-#     #     mode=get
-#     #     bucket=testteja1
-#     #     object=/*
-#     #     dest="{{ project_root_dir }}"
-#     #   #with_items: s3_bucket_items.s3_keys
+    - name: Install docker
+      become: true
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+    #notify: Start docker on boot
+      tags:
+        - docker
+
+    - name: Add remote "ubuntu" user to "docker" group
+      become: true
+      user:
+        name: "ubuntu"
+        group: "docker"
+        append: yes
+      tags:
+        - docker
+
+    - name: Install docker-compose
+      become: true
+      get_url: 
+        url : https://github.com/docker/compose/releases/download/v2.9.0/docker-compose-linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x'
+
 
 ###--------------------------------------------------------------------------------------------------------------------------
 
@@ -111,119 +126,13 @@
         accept_hostkey: yes
         update: yes
         force: yes
-
-        
-    #############################.env set up for testing#######################################
+    #################Spin the container#####################
 
   
-    # - name: Set up .env
-    #   become: yes
-    #   template:
-    #     src: ./apache-conf/envtest
-    #     dest: "{{ api_project_dir }}/.env"
-
-
-  ####################Get API1 .env values from AWS Secret Manager####################
-
-
-
-    - name: Get API1 .env values from AWS Secret Manager
-      debug: msg="{{ lookup('amazon.aws.aws_secret', api1_secret_name , region=region)}}"
-      register: command_output_api1
-      #ignore_errors: yes
-      no_log: yes
-
-    - set_fact:
-        env_dict_api1: "{{ command_output_api1.msg }}"
-      no_log: yes
-    
-    - name: Create API1 .env
-      lineinfile:
-        dest: "{{ api_project_dir }}/.env"
-        create: yes
-        line: "{{ item.key }}={{ item.value }}"
-        state: present
-      with_dict: "{{ env_dict_api1 }}"
-      #ignore_errors: yes
-      no_log: yes
-
-
-
-  # ################## MYSQL SET UP ###################
-
-  #   - name: Create snipeit database
-  #     become: yes
-  #     mysql_db: name=snipeit_db state=present
-  #     #register: db_status
-
-  #   - name: Create snipeit mysql user
-  #     become: yes
-  #     mysql_user: name=snipeit_user host='localhost' password=password priv=*.*:ALL state=present
-
-  #   - name: add sample data to database  
-  #     become: yes
-  #     copy: src=./apache-conf/dump.sql dest=/tmp/dump.sql
-
-  #   - name: insert sample data into database  
-  #     mysql_db: name=snipeit_db state=import target=/tmp/dump.sql login_user=snipeit_user login_password=password
-   
-   
-  
-#composer install
-
-    - name: Composer install 
-      shell: composer install
-      args:
-        chdir: "{{ api_project_dir }}"
-
-    - name: Move Bower-asset > bower
-      become: true 
-      shell: mv bower-asset bower 
-      args:
-        chdir: "{{ api_project_dir }}/vendor"
-    
-    - name: Change file ownership, group and permissions
-      become: true
-      shell: chmod 777 -R "{{ project_root_dir }}"
-
-
-#php migrate #
-    - name: php migrate 
-      shell: php console/yii migrate --interactive=0
+    - name: Spin the container
+      become: yes
+      shell: docker-compose -f docker-compose-dev.yml up -d
       ignore_errors: yes
       args:
         chdir: "{{ api_project_dir }}"
-
-##################apche2confsetup#####################
-
-  
-    - name: Set up Apache virtuahHost
-      become: true
-      template:
-        src: ./apache-conf/apache.conf
-        dest: /etc/apache2/sites-enabled/{{ http_conf }}
-
-
-
-    - name: Disable default Apache site
-      become: true
-      file: path=/etc/apache2/sites-enabled/000-default.conf state=absent
-
-    - name: enable mod_rewrite in apache.
-      become: true
-      shell: "a2enmod rewrite"
-
-
-#   handlers:
-
-
-    - name: Restart Apache
-      become: yes
-      service:
-        name: apache2
-        state: restarted
-
-
-
-
 

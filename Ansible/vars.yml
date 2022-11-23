@@ -1,12 +1,12 @@
 project_root_dir: /srv
 region: us-east-1
-server_name: dev2.arcadiamusicacademy.com
+server_name: dev2.snipeit.com
 
 #REPO
 
-repo: git@github.com:PearlThoughts/smw.git
-repo_branch: master
-api_project_dir: /srv/arcadiamusicacademy
+repo: https://github.com/PearlThoughts-Platform/SnipeIT-IAC.git
+repo_branch: main
+api_project_dir: /srv/snipeit
 api1_secret_name: smw        ## store the .env values in AWS secret manager as a json key pair values and mention the secret name.
 
 #apache
@@ -50,67 +50,6 @@ php_extensions:
     - opcache
     - ldap
     
-    #- python-mysqldb  
-#######################from Dev Server################
-
-# php_extensions:
-#     - bcmath
-#     - calendar
-#     #- Core
-#     - ctype
-#     - curl
-#     #- datadog-profiling
-#     #- date
-#     #- ddtrace
-#     - dom
-#     - exif
-#     - fileinfo
-#     - filter
-#     - ftp
-#     - gd
-#     - gettext
-#     - hash
-#     - iconv
-#     - intl
-#     - json
-#     - ldap
-#     - libxml
-#     - mbstring
-#     - mcrypt
-#     - mysqli
-#     - mysqlnd
-#     - openssl
-#     - pcntl
-#     - pcre
-#     - PDO
-#     - pdo_mysql
-#     - Phar
-#     - posix
-#     - readline
-#     - Reflection
-#     - session
-#     - shmop
-#     - SimpleXML
-#     - sockets
-#     - SPL
-#     - standard
-#     - sysvmsg
-#     - sysvsem
-#     - sysvshm
-#     - tokenizer
-#     - wddx 
-#     - xml
-#     - xmlreader
-#     - xmlwriter
-#     - xsl
-#     - Zend OPcache
-#     - zip
-#     - zlib
-
-#   [Zend Modules]
-#     - Zend OPcache
-#     - datadog-profiling
-#     - ddtrace  
-
+ 
 host_user: ubuntu
 group_name: deploy
