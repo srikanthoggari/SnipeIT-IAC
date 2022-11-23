@@ -19,7 +19,7 @@ Every commit will automatically creates AMI
 
 ```
 ### Terraform for Infra provisioning
-https://github.com/PT-DevOps/SMW-IaC
+terraform folder
 
 
 ### Demo Video For Reference
