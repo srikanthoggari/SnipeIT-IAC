@@ -15,8 +15,8 @@ packer {
   source "amazon-ebs" "linux" {
     # AMI Settings
     ami_name                      = "snipeitdev_goldenAMI_${var.build_number}"
-    instance_type                 = "c5.large"
-    source_ami                    = "ami-00978328f54e31526"
+    instance_type                 = "t2.micro"
+    source_ami                    = "ami-062df10d14676e201"
     ssh_username                  = "ubuntu"
     associate_public_ip_address   = false
     ami_virtualization_type       = "hvm"
